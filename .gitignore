@@ -1,0 +1,271 @@
+# .gitignore for BSC Arbitrage Bot
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.staging
+.env.backup
+*.env
+
+# Private keys and credentials (extra safety)
+private_key*
+*.key
+*.pem
+wallet.json
+keystore/
+secrets/
+
+# Go specific
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+arbitrage-bot
+arbitrage-bot.exe
+main
+bot
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+coverage.txt
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Go module download cache
+go/pkg/mod/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+arbitrage*.log
+bot*.log
+error*.log
+debug*.log
+transaction*.log
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+*~
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration backups
+config*.backup
+*.conf.backup
+
+# Build and dist directories
+build/
+dist/
+bin/
+target/
+
+# Node.js (if you have any JS tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# Kubernetes
+k8s/
+*.yaml
+*.yml
+
+# Testing
+test_results/
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.lnk
+
+# Archive files
+*.tar
+*.tar.gz
+*.tar.bz2
+*.zip
+*.rar
+*.7z
+
+# Documentation build files
+docs/_build/
+site/
+
+# Performance monitoring
+*.prof
+*.cpu
+*.mem
+
+# Debug and development files
+debug
+debug.go
+test.go
+playground.go
+scratch.go
+
+# Local configuration
+local.config
+dev.config
+.local
+
+# SSL certificates
+*.crt
+*.cert
+*.ca-bundle
+*.p12
+*.p7b
+*.p7c
+*.pfx
+
+# Monitoring and metrics
+prometheus/
+grafana/
+metrics/
+
+# Scripts that might contain sensitive data
+deploy.sh
+production.sh
+start_prod.sh
+
+# Backup and snapshot files
+snapshot_*
+backup_*
+dump_*
+
+# Local development
+dev/
+development/
+local/
+
+# Editor swap files
+.*.swp
+.*.swo
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Atom
+.atom/
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.externalToolBuilders/
+*.launch
+.pydevproject
+.cproject
+.autotools
+.factorypath
+.buildpath
+.target
+.tern-project
+.texlipse
+.springBeans
+.recommenders/
+.apt_generated/
+.cache-main
+.scala_dependencies
+.worksheet
+
+# Custom ignore for this project
+# Add any project-specific files to ignore
+config/local_*
+data/
+storage/
+cache/
+
+# Performance and profiling
+*.prof
+*.trace
+*.heap
+*.cpu
+*.mem
+
+# Local test files
+test_*
+*_test_*
+playground*
