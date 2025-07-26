@@ -894,3 +894,202 @@ func getOtherTokens(tokens map[string]string) []string {
 	sort.Strings(otherTokens)
 	return otherTokens
 }
+
+/// arbitrage.go - FIXED VERSION - Replace line 754 onwards with this
+// (Keep everything above line 754, replace everything after)
+
+func (s *ArbitrageService) FindEnhancedArbitrageOpportunities() error {
+	log.Println("🎯 Enhanced Arbitrage: Targeting meme coins for higher spreads...")
+
+	// Check if we're in peak trading hours
+	hour := time.Now().UTC().Hour()
+	isPeakHour := (hour >= 13 && hour <= 16) || (hour >= 21 && hour <= 23)
+
+	if isPeakHour {
+		log.Println("🔥 PEAK HOURS - High meme coin volatility expected!")
+	} else if hour >= 2 && hour <= 6 {
+		log.Println("😴 Low activity hours - reduced opportunities expected")
+	}
+
+	// Get all pairs but prioritize meme coins
+	pairs := s.TokenPairs
+	foundOpportunity := false
+
+	for _, pair := range pairs {
+		// Determine pair category and settings
+		category := getMemeCategory(pair.Name)
+		minProfit := getMinProfitForCategory(category)
+		gasAdjustment := getGasAdjustmentForCategory(category)
+
+		log.Printf("🎯 Checking %s: %s (min profit: %.2f%%)", category, pair.Name, minProfit*100)
+
+		// Try enhanced test amounts
+		for _, amount := range pair.TestAmounts {
+			// Check triangular arbitrage opportunities
+			result1, err1 := s.CheckTriangularArbitrage(pair, amount, true)
+			result2, err2 := s.CheckTriangularArbitrage(pair, amount, false)
+
+			if err1 != nil && err2 != nil {
+				log.Printf("⚠️ Both routes failed for %s: %v", pair.Name, err1)
+				continue
+			}
+
+			var bestResult *models.ArbitrageResult
+			var pancakeFirst bool
+			var adjustedProfit float64
+
+			// Evaluate Pancake->Biswap route
+			if err1 == nil {
+				adjustedProfit1 := result1.ProfitPercent - gasAdjustment
+				log.Printf("📊 Pancake->Biswap: %.4f%% (Gas adj: %.4f%%)",
+					result1.ProfitPercent*100, adjustedProfit1*100)
+
+				if adjustedProfit1 >= minProfit {
+					bestResult = result1
+					pancakeFirst = true
+					adjustedProfit = adjustedProfit1
+				}
+			}
+
+			// Evaluate Biswap->Pancake route
+			if err2 == nil {
+				adjustedProfit2 := result2.ProfitPercent - gasAdjustment
+				log.Printf("📊 Biswap->Pancake: %.4f%% (Gas adj: %.4f%%)",
+					result2.ProfitPercent*100, adjustedProfit2*100)
+
+				if adjustedProfit2 >= minProfit && (bestResult == nil || adjustedProfit2 > adjustedProfit) {
+					bestResult = result2
+					pancakeFirst = false
+					adjustedProfit = adjustedProfit2
+				}
+			}
+
+			// Execute if profitable
+			if bestResult != nil {
+				log.Printf("💰 ENHANCED OPPORTUNITY FOUND!")
+				log.Printf("🚀 %s: %.4f%% profit (%.6f WBNB)", pair.Name, adjustedProfit*100, amount)
+				log.Printf("📈 Category: %s, Route: %s", category, getRouteDescription(pancakeFirst))
+
+				// Execute the arbitrage
+				err := s.ExecuteArbitrage(pair, bestResult.TargetAmount, pancakeFirst)
+				if err != nil {
+					log.Printf("❌ Enhanced execution failed: %v", err)
+				} else {
+					foundOpportunity = true
+					log.Printf("✅ Enhanced trade executed successfully!")
+					recordEnhancedTrade(pair.Name, adjustedProfit, amount, category)
+				}
+				break // Move to next pair after execution
+			}
+		}
+
+		if foundOpportunity {
+			break // Focus on one opportunity at a time
+		}
+	}
+
+	if !foundOpportunity {
+		log.Println("😞 No enhanced opportunities found this round")
+		suggestEnhancedOptimizations(isPeakHour)
+	}
+
+	return nil
+}
+
+// Helper functions for enhanced arbitrage
+func getMemeCategory(pairName string) string {
+	switch {
+	case strings.Contains(pairName, "SHIB") || strings.Contains(pairName, "DOGE") ||
+		strings.Contains(pairName, "FLOKI") || strings.Contains(pairName, "SAFEMOON"):
+		return "meme"
+	case strings.Contains(pairName, "BSW"):
+		return "volatile"
+	case strings.Contains(pairName, "CAKE"):
+		return "established"
+	case strings.Contains(pairName, "BUSD"):
+		return "stable"
+	default:
+		return "unknown"
+	}
+}
+
+func getMinProfitForCategory(category string) float64 {
+	switch category {
+	case "meme":
+		return 0.005 // 0.5% for meme coins (higher volatility expected)
+	case "volatile":
+		return 0.003 // 0.3% for volatile tokens
+	case "established":
+		return 0.002 // 0.2% for established tokens
+	case "stable":
+		return 0.001 // 0.1% for stable pairs
+	default:
+		return 0.002
+	}
+}
+
+func getGasAdjustmentForCategory(category string) float64 {
+	switch category {
+	case "meme":
+		return 0.0015 // 0.15% - meme coins may have higher gas costs
+	case "volatile":
+		return 0.0012 // 0.12%
+	case "established":
+		return 0.0010 // 0.10%
+	case "stable":
+		return 0.0008 // 0.08%
+	default:
+		return 0.0010
+	}
+}
+
+func getRouteDescription(pancakeFirst bool) string {
+	if pancakeFirst {
+		return "Pancake→Biswap→Pancake"
+	}
+	return "Biswap→Pancake→Biswap"
+}
+
+// Enhanced statistics tracking
+var enhancedStats = struct {
+	TotalTrades   int
+	MemeTrades    int
+	TotalProfit   float64
+	BestTrade     float64
+	CategoryStats map[string]int
+}{
+	CategoryStats: make(map[string]int),
+}
+
+func recordEnhancedTrade(pairName string, profit, amount float64, category string) {
+	enhancedStats.TotalTrades++
+	enhancedStats.CategoryStats[category]++
+
+	tradeProfit := profit * amount
+	enhancedStats.TotalProfit += tradeProfit
+
+	if category == "meme" {
+		enhancedStats.MemeTrades++
+	}
+
+	if tradeProfit > enhancedStats.BestTrade {
+		enhancedStats.BestTrade = tradeProfit
+	}
+
+	log.Printf("📊 Enhanced Stats: %d total trades, %d meme trades, %.6f WBNB profit",
+		enhancedStats.TotalTrades, enhancedStats.MemeTrades, enhancedStats.TotalProfit)
+}
+
+func suggestEnhancedOptimizations(isPeakHour bool) {
+	if !isPeakHour {
+		log.Println("💡 Not in peak hours - meme coins typically less volatile")
+		log.Println("   Peak hours: 13-16 UTC (Asia), 21-23 UTC (US)")
+	}
+
+	if enhancedStats.TotalTrades > 3 && enhancedStats.MemeTrades == 0 {
+		log.Println("💡 No meme trades yet - consider:")
+		log.Println("   • Checking if SHIB/DOGE are actively traded")
+		log.Println("   • Lowering meme coin threshold to 0.3%")
+		log.Println("   • Waiting for market volatility")
+	}
+}

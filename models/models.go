@@ -1,4 +1,4 @@
-// models/models.go
+// models/models.go - Complete replacement
 package models
 
 import (
@@ -45,54 +45,97 @@ type PairReserves struct {
 	Token1   common.Address
 }
 
-// Initialize token pairs with CORRECTED addresses
+// Initialize token pairs with ENHANCED MEME COIN FOCUS
 func InitializeTokenPairs() []TokenPair {
 	return []TokenPair{
+		// PRIORITY 1: MEME COINS - Higher volatility and spreads
 		{
-			Name: "WBNB-BTCB-USDT",
+			Name: "WBNB-SHIB-USDT",
 			Tokens: map[string]string{
 				"WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-				"BTCB": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+				"SHIB": "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D", // SHIB on BSC
 				"USDT": "0x55d398326f99059fF775485246999027B3197955",
 			},
 			PancakeswapPair: map[string]string{
-				"WBNB-BTCB": "0x61EB789d75A95CAa3fF50ed7E47b96c132fEc082",
-				"BTCB-USDT": "0xD171B26E4484402de70e3Ea256bE5A2630d7e88D", // CORRECTED
+				"WBNB-SHIB": "0x...", // Will be fetched dynamically
+				"SHIB-USDT": "0x...",
 				"USDT-WBNB": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
 			},
 			BiswapPair: map[string]string{
-				"WBNB-BTCB": "0xC7e9d76ba11099AF3F330ff829c5F442d571e057",
-				"BTCB-USDT": "0xa987f0b7098585c735cD943ee07544a84e923d1D",
+				"WBNB-SHIB": "0x...", // Will be fetched dynamically
+				"SHIB-USDT": "0x...",
 				"USDT-WBNB": "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
 			},
-			Priority:    2,
-			TestAmounts: []float64{0.01, 0.05, 0.1}, // WBNB amounts for testing
+			Priority:    1,
+			TestAmounts: []float64{0.1, 0.5, 1.0, 2.0}, // Larger amounts for meme coins
 		},
 		{
-			Name: "WBNB-ETH-USDT",
+			Name: "WBNB-DOGE-USDT",
 			Tokens: map[string]string{
 				"WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-				"ETH":  "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+				"DOGE": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43", // DOGE on BSC
 				"USDT": "0x55d398326f99059fF775485246999027B3197955",
 			},
 			PancakeswapPair: map[string]string{
-				"WBNB-ETH":  "0x74E4716E431f45807DCF19f284c7aA99F18a4fbc",
-				"ETH-USDT":  "0x531FEbfeb9a61D948c384ACFBe6dCc51057AEa7e",
+				"WBNB-DOGE": "0x...",
+				"DOGE-USDT": "0x...",
 				"USDT-WBNB": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
 			},
 			BiswapPair: map[string]string{
-				"WBNB-ETH":  "0x5bf6941f029424674bb93A43b79fc46bF4A67c21",
-				"ETH-USDT":  "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+				"WBNB-DOGE": "0x...",
+				"DOGE-USDT": "0x...",
 				"USDT-WBNB": "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
 			},
-			Priority:    2,
-			TestAmounts: []float64{0.01, 0.05, 0.1}, // WBNB amounts for testing
+			Priority:    1,
+			TestAmounts: []float64{0.1, 0.5, 1.0, 2.0},
 		},
+		{
+			Name: "WBNB-FLOKI-USDT",
+			Tokens: map[string]string{
+				"WBNB":  "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+				"FLOKI": "0xfb5B838b6cfEEdC2873aB27866079AC55363D37E", // FLOKI on BSC
+				"USDT":  "0x55d398326f99059fF775485246999027B3197955",
+			},
+			PancakeswapPair: map[string]string{
+				"WBNB-FLOKI": "0x...",
+				"FLOKI-USDT": "0x...",
+				"USDT-WBNB":  "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+			},
+			BiswapPair: map[string]string{
+				"WBNB-FLOKI": "0x...",
+				"FLOKI-USDT": "0x...",
+				"USDT-WBNB":  "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
+			},
+			Priority:    1,
+			TestAmounts: []float64{0.1, 0.5, 1.0, 2.0},
+		},
+		{
+			Name: "WBNB-SAFEMOON-USDT",
+			Tokens: map[string]string{
+				"WBNB":     "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+				"SAFEMOON": "0x42981d0bfbAf196529376EE702F2a9Eb9092fcB5", // SafeMoon V2
+				"USDT":     "0x55d398326f99059fF775485246999027B3197955",
+			},
+			PancakeswapPair: map[string]string{
+				"WBNB-SAFEMOON": "0x...",
+				"SAFEMOON-USDT": "0x...",
+				"USDT-WBNB":     "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+			},
+			BiswapPair: map[string]string{
+				"WBNB-SAFEMOON": "0x...",
+				"SAFEMOON-USDT": "0x...",
+				"USDT-WBNB":     "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
+			},
+			Priority:    1,
+			TestAmounts: []float64{0.05, 0.1, 0.2}, // Smaller amounts for high risk
+		},
+
+		// PRIORITY 2: BSW (BiSwap native token - often has arbitrage opportunities)
 		{
 			Name: "WBNB-BSW-USDT",
 			Tokens: map[string]string{
 				"WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-				"BSW":  "0x965F527D9159dCe6288a2219DB51fc6Eef120dD1", // CORRECT BSW address
+				"BSW":  "0x965F527D9159dCe6288a2219DB51fc6Eef120dD1",
 				"USDT": "0x55d398326f99059fF775485246999027B3197955",
 			},
 			PancakeswapPair: map[string]string{
@@ -105,10 +148,33 @@ func InitializeTokenPairs() []TokenPair {
 				"BSW-USDT":  "0x2b30c317ceDFb554Ec525F85E79538D59970BEb0",
 				"USDT-WBNB": "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
 			},
-			Priority:    1,
-			TestAmounts: []float64{0.01, 0.05, 0.1}, // WBNB amounts for testing
+			Priority:    2,
+			TestAmounts: []float64{0.1, 0.5, 1.0},
 		},
-		// Add a simpler pair for testing
+
+		// PRIORITY 3: High volume established pairs (backup)
+		{
+			Name: "WBNB-CAKE-USDT",
+			Tokens: map[string]string{
+				"WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+				"CAKE": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", // PancakeSwap token
+				"USDT": "0x55d398326f99059fF775485246999027B3197955",
+			},
+			PancakeswapPair: map[string]string{
+				"WBNB-CAKE": "0x0eD7e52944161450477ee417DE9Cd3a859b14fD0",
+				"CAKE-USDT": "0x...",
+				"USDT-WBNB": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+			},
+			BiswapPair: map[string]string{
+				"WBNB-CAKE": "0x...",
+				"CAKE-USDT": "0x...",
+				"USDT-WBNB": "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
+			},
+			Priority:    3,
+			TestAmounts: []float64{0.1, 0.5, 1.0, 2.0},
+		},
+
+		// PRIORITY 4: Stable pairs (fallback - keep some for safety)
 		{
 			Name: "WBNB-USDT-BUSD",
 			Tokens: map[string]string{
@@ -126,8 +192,8 @@ func InitializeTokenPairs() []TokenPair {
 				"USDT-BUSD": "0xDA8ceb724A06819c0A5cDb4304ea0cB27F8304cF",
 				"BUSD-WBNB": "0x2b30c317ceDFb554Ec525F85E79538D59970BEb0",
 			},
-			Priority:    3,
-			TestAmounts: []float64{0.005, 0.01, 0.02}, // Smaller amounts for stable coins
+			Priority:    4,
+			TestAmounts: []float64{0.05, 0.1, 0.2}, // Smaller amounts for stable pairs
 		},
 	}
 }
