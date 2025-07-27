@@ -1,8 +1,6 @@
-// main.go - SIMPLE FIXED VERSION
 package main
 
 import (
-	"context"
 	"log"
 	"math/big"
 	"os"
@@ -21,12 +19,14 @@ func main() {
 	// Enhanced log format
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("======================================")
-	log.Println("🚀 BSC Enhanced Arbitrage Bot v2.0")
+	log.Println("🚀 BSC Enhanced Arbitrage Bot v2.1")
+	log.Println("🔧 AUTO RPC SWITCHING ENABLED")
 	log.Println("🎯 MEME COIN FOCUS")
 	log.Println("======================================")
 	log.Println("✨ Targeting: SHIB, DOGE, FLOKI, SAFEMOON")
 	log.Println("💰 Higher profit thresholds for volatiles")
 	log.Println("⏰ Peak hour optimization")
+	log.Println("🔄 Automatic RPC failover")
 	log.Println("======================================")
 
 	// Load and validate configuration
@@ -43,21 +43,11 @@ func main() {
 	}
 	log.Println("✅ Contract ABIs initialized successfully")
 
-	// Create Ethereum client with retry logic
-	log.Println("🌐 Connecting to BSC network...")
-	var client *services.EthClient
-	var retries = 3
-	for i := 0; i < retries; i++ {
-		client, err = services.NewEthClient(cfg)
-		if err != nil {
-			log.Printf("⚠️ Failed to create Ethereum client (attempt %d/%d): %v", i+1, retries, err)
-			if i < retries-1 {
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			log.Fatalf("❌ Failed to connect after %d attempts", retries)
-		}
-		break
+	// Create enhanced Ethereum client with automatic RPC switching
+	log.Println("🌐 Connecting to BSC network with failover...")
+	client, err := services.NewEthClient(cfg)
+	if err != nil {
+		log.Fatalf("❌ Failed to connect to BSC network: %v", err)
 	}
 	defer client.Close()
 	log.Println("✅ Connected to BSC network successfully")
@@ -69,15 +59,19 @@ func main() {
 	arbitrageService := services.NewArbitrageService(client, tokenService, routerService, cfg)
 	log.Println("✅ Services initialized successfully")
 
-	// Print enhanced wallet information
-	printEnhancedWalletInfo(client, tokenService)
+	// Print enhanced wallet information with error handling
+	printEnhancedWalletInfoWithRetry(client, tokenService)
 
 	// Print configuration
 	printEnhancedConfig(cfg)
 
-	// Verify and update pair addresses
+	// Start RPC health monitoring in background
+	stopHealthMonitor := make(chan bool, 1)
+	go monitorRPCHealth(client, stopHealthMonitor)
+
+	// Verify and update pair addresses with error handling
 	log.Println("🔍 Verifying and updating pair addresses...")
-	err = arbitrageService.VerifyAndUpdatePairs()
+	err = verifyPairsWithRetry(arbitrageService, client)
 	if err != nil {
 		log.Printf("⚠️ Warning: Error verifying pairs: %v", err)
 		log.Println("📝 Continuing with manually configured addresses...")
@@ -94,15 +88,19 @@ func main() {
 
 	log.Println("======================================")
 	log.Println("🎯 Starting Enhanced Meme Coin Arbitrage...")
+	log.Println("🔄 Auto RPC switching enabled")
 	log.Println("======================================")
 
-	go runEnhancedArbitrageLoop(arbitrageService, cfg, done, stop)
+	go runEnhancedArbitrageLoopWithRetry(arbitrageService, client, cfg, done, stop)
 
 	// Wait for termination signal
 	<-stop
 	log.Println("\n======================================")
 	log.Println("🛑 Shutdown signal received...")
 	log.Println("======================================")
+
+	// Stop health monitoring
+	stopHealthMonitor <- true
 
 	// Signal the arbitrage loop to stop
 	done <- true
@@ -114,16 +112,22 @@ func main() {
 	log.Println("🙏 Thank you for using BSC Enhanced Arbitrage Bot!")
 }
 
-func printEnhancedWalletInfo(client *services.EthClient, tokenService *services.TokenService) {
+func printEnhancedWalletInfoWithRetry(client *services.EthClient, tokenService *services.TokenService) {
 	log.Println("======================================")
 	log.Println("💼 Enhanced Wallet Information")
 	log.Println("======================================")
+
+	// Get wallet address
 	log.Printf("📍 Address: %s", client.Address.Hex())
 
-	// Get native BNB balance
-	bnbBalance, err := client.Client.BalanceAt(context.Background(), client.Address, nil)
+	// Log current RPC status
+	client.LogConnectionStatus()
+
+	// Get native BNB balance with retry
+	log.Println("🔍 Fetching BNB balance...")
+	bnbBalance, err := client.GetNativeBalanceWithRetry(client.Address)
 	if err != nil {
-		log.Printf("❌ Error getting BNB balance: %v", err)
+		log.Printf("❌ Error getting BNB balance after retries: %v", err)
 	} else {
 		bnbFloat := new(big.Float).SetInt(bnbBalance)
 		bnbFloat.Quo(bnbFloat, big.NewFloat(1e18))
@@ -135,11 +139,12 @@ func printEnhancedWalletInfo(client *services.EthClient, tokenService *services.
 		}
 	}
 
-	// Get WBNB balance with enhanced warnings
+	// Get WBNB balance with enhanced warnings and retry
+	log.Println("🔍 Fetching WBNB balance...")
 	wbnbAddr := common.HexToAddress(config.WBNB)
-	wbnbBalance, err := tokenService.GetTokenBalance(wbnbAddr, client.Address)
+	wbnbBalance, err := client.GetTokenBalanceWithRetry(wbnbAddr, client.Address)
 	if err != nil {
-		log.Printf("❌ Error getting WBNB balance: %v", err)
+		log.Printf("❌ Error getting WBNB balance after retries: %v", err)
 	} else {
 		decimals, err := tokenService.GetTokenDecimals(wbnbAddr)
 		if err != nil {
@@ -159,11 +164,12 @@ func printEnhancedWalletInfo(client *services.EthClient, tokenService *services.
 		}
 	}
 
-	// Get USDT balance
+	// Get USDT balance with retry
+	log.Println("🔍 Fetching USDT balance...")
 	usdtAddr := common.HexToAddress(config.USDT)
-	usdtBalance, err := tokenService.GetTokenBalance(usdtAddr, client.Address)
+	usdtBalance, err := client.GetTokenBalanceWithRetry(usdtAddr, client.Address)
 	if err != nil {
-		log.Printf("💵 USDT Balance: Unable to fetch (%v)", err)
+		log.Printf("💵 USDT Balance: Unable to fetch after retries (%v)", err)
 	} else {
 		decimals, err := tokenService.GetTokenDecimals(usdtAddr)
 		if err == nil {
@@ -187,12 +193,44 @@ func printEnhancedConfig(cfg *config.Config) {
 	log.Println("   • Established (CAKE): 0.2% minimum")
 	log.Println("   • Stable (BUSD): 0.1% minimum")
 	log.Println("⏰ Peak hours: 13-16 UTC (Asia), 21-23 UTC (US)")
+	log.Println("🔄 Auto RPC switching: ENABLED")
 	log.Println("💡 Strategy: Target meme coin volatility for higher profits")
 	log.Println("======================================")
 }
 
-func runEnhancedArbitrageLoop(arbitrageService *services.ArbitrageService, cfg *config.Config, done chan bool, stop chan os.Signal) {
-	// Enhanced timing
+func monitorRPCHealth(client *services.EthClient, stopChan <-chan bool) {
+	ticker := time.NewTicker(60 * time.Second) // Check every minute
+	defer ticker.Stop()
+
+	log.Println("🔍 Starting RPC health monitoring...")
+
+	for {
+		select {
+		case <-ticker.C:
+			if !client.HealthCheck() {
+				log.Printf("⚠️ RPC health check failed, attempting recovery...")
+				if err := client.SwitchRPC(); err != nil {
+					log.Printf("❌ RPC recovery failed: %v", err)
+				} else {
+					log.Printf("✅ RPC recovery successful")
+				}
+			}
+
+		case <-stopChan:
+			log.Println("🛑 Stopping RPC health monitoring")
+			return
+		}
+	}
+}
+
+func verifyPairsWithRetry(arbitrageService *services.ArbitrageService, client *services.EthClient) error {
+	return client.WithRetry("VerifyPairs", func() error {
+		return arbitrageService.VerifyAndUpdatePairs()
+	})
+}
+
+func runEnhancedArbitrageLoopWithRetry(arbitrageService *services.ArbitrageService, client *services.EthClient, cfg *config.Config, done chan bool, stop chan os.Signal) {
+	// Enhanced timing - FIXED: Ensure minimum interval
 	baseScanInterval := time.Duration(cfg.CooldownPeriod) * time.Second
 	if baseScanInterval < 15*time.Second {
 		baseScanInterval = 15 * time.Second // Minimum for meme coin scanning
@@ -206,14 +244,16 @@ func runEnhancedArbitrageLoop(arbitrageService *services.ArbitrageService, cfg *
 	var successfulScans int
 	var errorCount int
 	var consecutiveErrors int
+	var rpcSwitches int
 	startTime := time.Now()
 
 	log.Printf("🔄 Enhanced monitoring started (interval: %v)", baseScanInterval)
 	log.Println("🎯 Focusing on meme coins for higher profit opportunities")
+	log.Println("🔄 Automatic RPC switching enabled")
 
 	// Run initial enhanced scan
 	log.Println("🔍 Running initial enhanced scan...")
-	if err := performEnhancedScan(arbitrageService, "initial"); err != nil {
+	if err := performEnhancedScanWithRetry(arbitrageService, client, "initial"); err != nil {
 		log.Printf("❌ Initial scan error: %v", err)
 		errorCount++
 		consecutiveErrors++
@@ -226,23 +266,38 @@ func runEnhancedArbitrageLoop(arbitrageService *services.ArbitrageService, cfg *
 	for {
 		select {
 		case <-ticker.C:
+			// Log RPC status periodically
+			if totalScans%10 == 0 {
+				client.LogConnectionStatus()
+			}
+
 			// Determine scan type based on current time
 			scanType := getScanType()
 
-			// Perform enhanced scan
-			if err := performEnhancedScan(arbitrageService, scanType); err != nil {
+			// Perform enhanced scan with retry logic
+			if err := performEnhancedScanWithRetry(arbitrageService, client, scanType); err != nil {
 				log.Printf("❌ Enhanced scan error: %v", err)
 				errorCount++
 				consecutiveErrors++
 
-				// Enhanced error recovery
+				// Check if this was a connection error that triggered RPC switch
+				if services.IsConnectionError(err) {
+					rpcSwitches++
+					log.Printf("🔄 RPC switch count: %d", rpcSwitches)
+				}
+
+				// Enhanced error recovery with connection check
 				if consecutiveErrors >= 3 {
-					log.Println("⚠️ Multiple errors, attempting recovery...")
-					if switchErr := arbitrageService.Client.SwitchRPC(); switchErr != nil {
-						log.Printf("❌ RPC switch failed: %v", switchErr)
-					} else {
-						log.Println("✅ Successfully switched to backup RPC")
-						consecutiveErrors = 0
+					log.Println("⚠️ Multiple errors, checking RPC health...")
+					if !client.HealthCheck() {
+						log.Println("🔄 RPC unhealthy, forcing switch...")
+						if switchErr := client.SwitchRPC(); switchErr != nil {
+							log.Printf("❌ Manual RPC switch failed: %v", switchErr)
+						} else {
+							log.Println("✅ Manual RPC switch successful")
+							consecutiveErrors = 0
+							rpcSwitches++
+						}
 					}
 				}
 			} else {
@@ -253,12 +308,12 @@ func runEnhancedArbitrageLoop(arbitrageService *services.ArbitrageService, cfg *
 
 			// Print enhanced statistics every 5 scans
 			if totalScans%5 == 0 {
-				printEnhancedStats(totalScans, successfulScans, errorCount, startTime)
+				printEnhancedStatsWithRPC(totalScans, successfulScans, errorCount, rpcSwitches, startTime, client)
 			}
 
-			// Adaptive scan interval based on time and performance
+			// FIXED: Adaptive scan interval with proper validation
 			newInterval := calculateAdaptiveInterval(baseScanInterval, consecutiveErrors)
-			if newInterval != baseScanInterval {
+			if newInterval != baseScanInterval && newInterval > 0 {
 				log.Printf("⚡ Adjusting scan interval: %v → %v", baseScanInterval, newInterval)
 				ticker.Reset(newInterval)
 				baseScanInterval = newInterval
@@ -266,13 +321,13 @@ func runEnhancedArbitrageLoop(arbitrageService *services.ArbitrageService, cfg *
 
 		case <-done:
 			log.Println("🛑 Stopping enhanced arbitrage loop...")
-			printFinalEnhancedStats(totalScans, successfulScans, errorCount, startTime)
+			printFinalEnhancedStatsWithRPC(totalScans, successfulScans, errorCount, rpcSwitches, startTime, client)
 			return
 		}
 	}
 }
 
-func performEnhancedScan(arbitrageService *services.ArbitrageService, scanType string) error {
+func performEnhancedScanWithRetry(arbitrageService *services.ArbitrageService, client *services.EthClient, scanType string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("❌ Panic in %s scan: %v", scanType, r)
@@ -281,9 +336,12 @@ func performEnhancedScan(arbitrageService *services.ArbitrageService, scanType s
 
 	startTime := time.Now()
 
-	// Use enhanced arbitrage method
+	// Use enhanced arbitrage method with retry logic
 	log.Printf("🎯 %s enhanced scan (meme focus)...", scanType)
-	err := arbitrageService.FindEnhancedArbitrageOpportunities()
+
+	err := client.WithRetry("EnhancedArbitrageScan", func() error {
+		return arbitrageService.FindEnhancedArbitrageOpportunities()
+	})
 
 	scanDuration := time.Since(startTime)
 
@@ -308,28 +366,37 @@ func getScanType() string {
 	}
 }
 
+// FIXED: Prevent zero or negative intervals
 func calculateAdaptiveInterval(baseInterval time.Duration, consecutiveErrors int) time.Duration {
+	// Define minimum interval to prevent panic
+	const minInterval = 5 * time.Second
+
 	hour := time.Now().UTC().Hour()
+	var newInterval time.Duration
 
 	// Peak hours - scan faster for meme coin opportunities
 	if (hour >= 13 && hour <= 16) || (hour >= 21 && hour <= 23) {
-		return time.Duration(float64(baseInterval) * 0.7) // 30% faster
+		newInterval = time.Duration(float64(baseInterval) * 0.7) // 30% faster
+	} else if hour >= 2 && hour <= 6 {
+		// Low activity hours - scan slower
+		newInterval = time.Duration(float64(baseInterval) * 2.0) // 100% slower
+	} else if consecutiveErrors > 1 {
+		// If errors, slow down
+		newInterval = time.Duration(float64(baseInterval) * 1.5) // 50% slower
+	} else {
+		newInterval = baseInterval
 	}
 
-	// Low activity hours - scan slower
-	if hour >= 2 && hour <= 6 {
-		return time.Duration(float64(baseInterval) * 2.0) // 100% slower
+	// CRITICAL: Always ensure minimum interval to prevent panic
+	if newInterval < minInterval {
+		log.Printf("⚠️ Calculated interval %v too small, using minimum %v", newInterval, minInterval)
+		return minInterval
 	}
 
-	// If errors, slow down
-	if consecutiveErrors > 1 {
-		return time.Duration(float64(baseInterval) * 1.5) // 50% slower
-	}
-
-	return baseInterval
+	return newInterval
 }
 
-func printEnhancedStats(totalScans, successfulScans, errorCount int, startTime time.Time) {
+func printEnhancedStatsWithRPC(totalScans, successfulScans, errorCount, rpcSwitches int, startTime time.Time, client *services.EthClient) {
 	uptime := time.Since(startTime)
 	successRate := float64(successfulScans) / float64(totalScans) * 100
 
@@ -338,7 +405,11 @@ func printEnhancedStats(totalScans, successfulScans, errorCount int, startTime t
 	log.Printf("🔍 Total scans: %d", totalScans)
 	log.Printf("✅ Successful: %d (%.1f%%)", successfulScans, successRate)
 	log.Printf("❌ Errors: %d", errorCount)
+	log.Printf("🔄 RPC switches: %d", rpcSwitches)
 	log.Printf("⚡ Avg scan time: %.1fs", uptime.Seconds()/float64(totalScans))
+
+	// RPC status
+	client.LogConnectionStatus()
 
 	// Time-based insights
 	hour := time.Now().UTC().Hour()
@@ -353,7 +424,7 @@ func printEnhancedStats(totalScans, successfulScans, errorCount int, startTime t
 	log.Println("===============================")
 }
 
-func printFinalEnhancedStats(totalScans, successfulScans, errorCount int, startTime time.Time) {
+func printFinalEnhancedStatsWithRPC(totalScans, successfulScans, errorCount, rpcSwitches int, startTime time.Time, client *services.EthClient) {
 	uptime := time.Since(startTime)
 
 	log.Println("======================================")
@@ -363,12 +434,16 @@ func printFinalEnhancedStats(totalScans, successfulScans, errorCount int, startT
 	log.Printf("🔍 Total scans: %d", totalScans)
 	log.Printf("✅ Successful: %d", successfulScans)
 	log.Printf("❌ Failed: %d", errorCount)
+	log.Printf("🔄 RPC switches: %d", rpcSwitches)
 
 	if totalScans > 0 {
 		successRate := float64(successfulScans) / float64(totalScans) * 100
 		log.Printf("📊 Success rate: %.1f%%", successRate)
 		log.Printf("⚡ Average scan time: %.1fs", uptime.Seconds()/float64(totalScans))
 	}
+
+	// Final RPC status
+	client.LogConnectionStatus()
 
 	log.Println("======================================")
 }
