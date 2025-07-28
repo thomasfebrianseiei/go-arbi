@@ -337,7 +337,7 @@ func runPersistentArbitrageLoop(arbitrageService *services.ArbitrageService, cli
 			}
 
 			// FIXED: Calculate new interval with better logic
-			newInterval := calculateAdaptiveInterval(baseScanInterval, realErrorsForAdaptive)
+			newInterval := calculateAdaptiveIntervalWithCap(baseScanInterval, realErrorsForAdaptive)
 
 			// FIXED: Only change interval if significantly different
 			if newInterval != baseScanInterval {
@@ -533,4 +533,25 @@ func printFinalEnhancedStatsWithRPC(totalScans, successfulScans, errorCount, rpc
 	client.LogConnectionStatus()
 
 	log.Println("======================================")
+}
+
+// ABSOLUTE SAFE version with emergency caps
+func calculateAdaptiveIntervalWithCap(baseInterval time.Duration, consecutiveErrors int) time.Duration {
+	// Call existing function
+	newInterval := calculateAdaptiveInterval(baseInterval, consecutiveErrors)
+
+	// EMERGENCY CAP - double protection
+	const emergencyCap = 120 * time.Second
+	if newInterval > emergencyCap {
+		log.Printf("🚨 EMERGENCY: Interval %.1f minutes capped to 2 minutes", newInterval.Minutes())
+		return emergencyCap
+	}
+
+	// Additional safety check
+	if newInterval.Minutes() > 2 {
+		log.Printf("🛑 SAFETY: Forcing 2-minute cap on %.1f minute interval", newInterval.Minutes())
+		return emergencyCap
+	}
+
+	return newInterval
 }
